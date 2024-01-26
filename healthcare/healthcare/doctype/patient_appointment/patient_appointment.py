@@ -582,7 +582,7 @@ def check_employee_wise_availability(date, practitioner_doc):
 def get_available_slots(practitioner_doc, date, tz=None):
 
 	if not tz:
-		tz = frappe.utils.get_time_zone()
+		tz = frappe.utils.get_system_timezone()
 
 	date_in_patient_tz = date
 	practitioner = practitioner_doc.name
