@@ -62,6 +62,7 @@ async function get_time_slots(date, timezone) {
 		method: 'healthcare.healthcare.doctype.patient_appointment.patient_appointment.get_availability_data',
 		args: {
 			practitioner: selected_practitioner,
+			appointment: 'Consultation',
 			date: date,
 			to_tz: timezone
 		}
