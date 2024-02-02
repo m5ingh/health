@@ -64,7 +64,7 @@ async function get_time_slots(date, timezone) {
 			practitioner: selected_practitioner,
 			date: date,
 			to_tz: timezone,
-			appointment:{practitioner: selected_practitioner, date: date}
+			let appointment: {practitioner: selected_practitioner,patient: patient_id.value, date: date};
 		}
 	})).message;
 	return slots;
