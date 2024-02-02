@@ -63,7 +63,8 @@ async function get_time_slots(date, timezone) {
 		args: {
 			practitioner: selected_practitioner,
 			date: date,
-			to_tz: timezone
+			to_tz: timezone,
+			appointment: appointment
 		}
 	})).message;
 	return slots;
