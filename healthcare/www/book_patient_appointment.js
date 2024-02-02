@@ -58,13 +58,14 @@ function setup_timezone_selector() {
 }
 
 async function get_time_slots(date, timezone) {
+	let appointment: {practitioner: selected_practitioner,patient: patient_id.value, date: date};
 	let slots = (await frappe.call({
 		method: 'healthcare.healthcare.doctype.patient_appointment.patient_appointment.get_availability_data',
 		args: {
 			practitioner: selected_practitioner,
 			date: date,
 			to_tz: timezone,
-			let appointment: {practitioner: selected_practitioner,patient: patient_id.value, date: date};
+			appointment: appointment 
 		}
 	})).message;
 	return slots;
