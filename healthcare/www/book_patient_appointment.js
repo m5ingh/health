@@ -60,6 +60,7 @@ function setup_timezone_selector() {
 async function get_time_slots(date, timezone) {
 	let patient_id = document.getElementById('patient-list');
 	let appointmentData = {
+		doctype: "Patient Appointment",
         	patient: patient_id.value,
 		practitioner: selected_practitioner,
 		date: date
