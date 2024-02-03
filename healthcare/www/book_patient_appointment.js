@@ -249,8 +249,8 @@ function book_appointment(){
 			duration: window.duration,
 			service_unit : window.service_unit,
 			opt_out_vconf: opt_out_vconf,
-			appointment_type: "Consultation",
-			appointment_for: "Practitioner",
+			appointment_type: Consultation,
+			appointment_for: Practitioner,
 		},
 		callback: (r) => {
 			if(!r.exc && r.message) {
