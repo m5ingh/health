@@ -237,7 +237,7 @@ function book_appointment(){
 	let patient_id = document.getElementById('patient-list');
 	let opt_out_vconf = 1
 	let appointment_type = Consultation
-        let  appointment_for = Practitioner
+        let appointment_for = Practitioner
 	if (parseInt(window.tele_conf)==1 && !$(".opt-out-check").is(":checked")) {
 		opt_out_vconf = 0
 	}
