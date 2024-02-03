@@ -63,7 +63,9 @@ async function get_time_slots(date, timezone) {
 		doctype: "Patient Appointment",
         	patient: patient_id.value,
 		practitioner: selected_practitioner,
-		date: date
+		date: date,
+		appointment_type: "Consultation",
+		appointment_for: "Practitioner"
 	};
 	let slots = (await frappe.call({
 		method: 'healthcare.healthcare.doctype.patient_appointment.patient_appointment.get_availability_data',
