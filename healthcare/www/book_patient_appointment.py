@@ -39,6 +39,8 @@ def get_context(context):
 
 @frappe.whitelist()
 def book_appointment(practitioner, patient, date, time, duration, service_unit, opt_out_vconf):
+	appointment_type = "Consultation"
+	appointment_for = "Practitioner"
 	if patient:
 		appointment = frappe.get_doc({
 			'doctype': 'Patient Appointment',
@@ -49,6 +51,8 @@ def book_appointment(practitioner, patient, date, time, duration, service_unit, 
 			'duration': duration,
 			'service_unit': service_unit,
 			'add_video_conferencing': 0 if int(opt_out_vconf)==1 else 1,
+			'appointment_type': appointment_type,
+                        'appointment_for': appointment_for,
 		})
 		appointment.flags.silent = True
 		appointment.insert(ignore_permissions=True)
