@@ -235,8 +235,8 @@ function book_appointment(){
 		indicator: "info"
 	  });
 	let patient_id = document.getElementById('patient-list');
-	let appointment_type = "Consultation";
-        let appointment_for = "Practitioner";
+	let appointment_typ = document.getElementById('appointment-type');
+        let appointment_fr = document.getElementById('appointment-for');
 	let opt_out_vconf = 1
 	if (parseInt(window.tele_conf)==1 && !$(".opt-out-check").is(":checked")) {
 		opt_out_vconf = 0
@@ -251,8 +251,8 @@ function book_appointment(){
 			duration: window.duration,
 			service_unit : window.service_unit,
 			opt_out_vconf: opt_out_vconf,
-			appointment_type: appointment_type.value,
-			appointment_for: appointment_for.value,
+			appointment_type: appointment_typ.value,
+			appointment_for: appointment_fr.value,
 		},
 		callback: (r) => {
 			if(!r.exc && r.message) {
