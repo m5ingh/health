@@ -235,9 +235,9 @@ function book_appointment(){
 		indicator: "info"
 	  });
 	let patient_id = document.getElementById('patient-list');
+	const appointment_type = "Consultation";
+        const appointment_for = "Practitioner";
 	let opt_out_vconf = 1
-	let appointment_type = Consultation
-        let appointment_for = Practitioner
 	if (parseInt(window.tele_conf)==1 && !$(".opt-out-check").is(":checked")) {
 		opt_out_vconf = 0
 	}
@@ -252,7 +252,7 @@ function book_appointment(){
 			service_unit : window.service_unit,
 			opt_out_vconf: opt_out_vconf,
 			appointment_type: appointment_type,
-			appointment_for: appointment_for
+			appointment_for: appointment_for,
 		},
 		callback: (r) => {
 			if(!r.exc && r.message) {
