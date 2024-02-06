@@ -4,17 +4,19 @@
 
 
 import dateutil
+
 import frappe
-from erpnext import get_default_currency
-from erpnext.accounts.party import get_dashboard_info
-from erpnext.selling.doctype.customer.customer import make_address
 from frappe import _
 from frappe.contacts.address_and_contact import load_address_and_contact
 from frappe.contacts.doctype.contact.contact import get_default_contact
 from frappe.model.document import Document
 from frappe.model.naming import set_name_by_naming_series
-from frappe.utils import cint, cstr, getdate, has_common
+from frappe.utils import cint, cstr, getdate
 from frappe.utils.nestedset import get_root_of
+
+from erpnext import get_default_currency
+from erpnext.accounts.party import get_dashboard_info
+from erpnext.selling.doctype.customer.customer import make_address
 
 from healthcare.healthcare.doctype.healthcare_settings.healthcare_settings import (
 	get_income_account,
@@ -32,6 +34,7 @@ class Patient(Document):
 	def validate(self):
 		self.set_full_name()
 		self.flags.is_new_doc = self.is_new()
+		self.flags.existing_customer = self.is_new() and bool(self.customer)
 
 	def before_insert(self):
 		self.set_missing_customer_details()
@@ -46,18 +49,13 @@ class Patient(Document):
 	def on_update(self):
 		if frappe.db.get_single_value("Healthcare Settings", "link_customer_to_patient"):
 			if self.customer:
-				customer = frappe.get_doc("Customer", self.customer)
-				if self.customer_group:
-					customer.customer_group = self.customer_group
-				if self.territory:
-					customer.territory = self.territory
-				customer.customer_name = self.patient_name
-				customer.default_price_list = self.default_price_list
-				customer.default_currency = self.default_currency
-				customer.language = self.language
-				customer.image = self.image
-				customer.ignore_mandatory = True
-				customer.save(ignore_permissions=True)
+				if self.flags.existing_customer or frappe.db.exists(
+					{"doctype": "Patient", "name": ["!=", self.name], "customer": self.customer}
+				):
+					self.update_patient_based_on_existing_customer()
+				else:
+					self.update_linked_customer()
+
 			else:
 				create_customer(self)
 
@@ -258,12 +256,43 @@ class Patient(Document):
 			if not ref_date:
 				ref_date = frappe.utils.nowdate()
 			diff = frappe.utils.date_diff(ref_date, self.dob)
-			years = diff//365
-			months = (diff - (years * 365))//30
-			days = ((diff - (years * 365)) - (months * 30))
-			return {"age_in_string": f'{str(years)} {_("Year(s)")} {str(months)} {_("Month(s)")} {str(days)} {_("Day(s)")}',
-					"age_in_days": diff
-				}
+			years = diff // 365
+			months = (diff - (years * 365)) // 30
+			days = (diff - (years * 365)) - (months * 30)
+			return {
+				"age_in_string": f'{str(years)} {_("Year(s)")} {str(months)} {_("Month(s)")} {str(days)} {_("Day(s)")}',
+				"age_in_days": diff,
+			}
+
+	def update_linked_customer(self):
+		customer = frappe.get_doc("Customer", self.customer)
+		if self.customer_group:
+			customer.customer_group = self.customer_group
+		if self.territory:
+			customer.territory = self.territory
+		customer.customer_name = self.patient_name
+		customer.default_price_list = self.default_price_list
+		customer.default_currency = self.default_currency
+		customer.language = self.language
+		customer.image = self.image
+		customer.ignore_mandatory = True
+		customer.save(ignore_permissions=True)
+
+		frappe.msgprint(_("Customer {0} updated").format(customer.name), alert=True)
+
+	def update_patient_based_on_existing_customer(self):
+		customer = frappe.get_doc("Customer", self.customer)
+		self.db_set(
+			{
+				"customer_group": customer.customer_group,
+				"territory": customer.territory,
+				"default_price_list": customer.default_price_list,
+				"default_currency": customer.default_currency,
+				"language": customer.language,
+			}
+		)
+		self.notify_update()
+
 
 def create_customer(doc):
 	customer = frappe.get_doc(
@@ -282,7 +311,7 @@ def create_customer(doc):
 	).insert(ignore_permissions=True, ignore_mandatory=True)
 
 	frappe.db.set_value("Patient", doc.name, "customer", customer.name)
-	frappe.msgprint(_("Customer {0} is created.").format(customer.name), alert=True)
+	frappe.msgprint(_("Customer {0} created and linked to Patient").format(customer.name), alert=True)
 
 
 def make_invoice(patient, company):
@@ -354,30 +383,3 @@ def get_timeline_data(doctype, name):
 		patient_timeline_data.update(customer_timeline_data)
 
 	return patient_timeline_data
-
-
-def get_patients_from_user(user):
-	patients = []
-	if "Patient" in frappe.get_roles(user):
-
-		contact = frappe.qb.DocType("Contact")
-		dlink = frappe.qb.DocType("Dynamic Link")
-		patient = frappe.qb.DocType("Patient")
-
-		query = (
-			frappe.qb.from_(contact)
-			.from_(dlink)
-			.from_(patient)
-			.select(
-				contact.email_id,
-				dlink.link_doctype,
-				dlink.link_name,
-				patient.patient_name,
-			)
-			.where((contact.name == dlink.parent) & (contact.email_id == user) & (patient.name == dlink.link_name))
-		)
-
-		contacts = query.run(as_dict=True)
-
-		patients = [{"patient":c.link_name, "full_name": c.patient_name} for c in contacts if c.link_doctype == "Patient"]
-	return patients
