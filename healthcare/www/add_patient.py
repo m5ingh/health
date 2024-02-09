@@ -2,17 +2,11 @@
 import frappe
 
 @frappe.whitelist()
-def add_patient_reg(first_name, gender, email):
-    frappe.msgprint(f"Received First Name: {first_name}")
-    frappe.msgprint(f"Received Gender: {gender}")
-    frappe.msgprint(f"Received Email: {email}")
-    # Create a new patient document
+def add_patient_reg(first_name, gender):
     new_patient = frappe.get_doc({
         'doctype': 'Patient',
         'first_name': first_name,
-        'sex': gender,
-        'email': email
-        # Add other fields as needed
+        'sex': gender
     })
 
     # Save the new patient document
