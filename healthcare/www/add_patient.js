@@ -2,7 +2,7 @@
 function add_patient() {
     // Collect patient data from the form or input fields
     let first_name = $("#first_name").val();
-    let gender = $("#gender").val();
+    let gender = $("#gender option:selected").val();
     let email = $("#email").val();
 
     // Make a request to the server-side API to add a new patient
