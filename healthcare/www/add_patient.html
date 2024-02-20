@@ -1,0 +1,50 @@
+<!-- my_custom_app/www/add_patient.html -->
+{% extends "frappe/templates/web.html" %}
+
+{% block content %}
+{{ include_style('healthcare-web.bundle.css') }}
+
+<section class="portal-main-section">
+    <div class="col-sm-12 c-section portal-full-section" id="book-appointment-sec">
+        <!-- Breadcrumb Section -->
+        <div class="col-sm-12">
+            <ul class="breadcrumb">
+                <li><a href="/" class="normal-bc-link">{{ _('Home') }}</a> > </li>
+            </ul>
+        </div>
+
+        <!-- Main Content Section -->
+        <div class="text-center mt-5">
+            <!-- Add practitioner details or other content if needed -->
+        </div>
+
+        <!-- Patient Details Form -->
+        <div class="row justify-content-center mt-3">
+            <div class="col-md-6 align-self-center">
+                <div class="row">
+                    <!-- Add input fields for first_name, gender, and use frappe.session.user for email -->
+                    <input type="text" id="first_name" placeholder="Enter First name" class="form-control m-3 col-md">
+                    <input type="email" id="email" placeholder="Email" value="{{ frappe.session.user }}" class="form-control m-3 col-md" readonly>
+                    <select id="gender" class="form-control m-3 col-md">
+                        <option value="Male">Male</option>
+                        <option value="Female">Female</option>
+                        <!-- Add other gender options as needed -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="row justify-content-center mt-3">
+            <div class="col-md-4 mb-3">
+                <button class="btn btn-primary form-control" onclick="add_patient()">Submit</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include your JavaScript file -->
+    <script src="add_patient.js"></script>
+</section>
+
+{% endblock %}
+
