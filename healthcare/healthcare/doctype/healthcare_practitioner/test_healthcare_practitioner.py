@@ -68,3 +68,5 @@ class TestHealthcarePractitioner(FrappeTestCase):
 		frappe.db.sql(
 			"""delete from `tabHealthcare Practitioner` where name like '__Test Healthcare Practitioner%'"""
 		)
+
+

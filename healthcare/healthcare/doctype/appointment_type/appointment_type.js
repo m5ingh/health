@@ -108,3 +108,6 @@ frappe.ui.form.on('Appointment Type Service Item', {
 		}
 	}
 });
+
+
+

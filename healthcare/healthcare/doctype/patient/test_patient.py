@@ -131,3 +131,6 @@ class TestPatient(FrappeTestCase):
 
 		self.assertEqual(p1_customer_name, p2_customer_name)
 		self.assertEqual(p2_customer.customer_name, "John Doe")
+
+
+

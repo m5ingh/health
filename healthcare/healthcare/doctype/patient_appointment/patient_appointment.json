@@ -2,7 +2,7 @@
  "actions": [],
  "allow_import": 1,
  "autoname": "naming_series:",
- "creation": "2017-05-04 11:52:40.941507",
+ "creation": "2017-05-04 11:52:41.141507",
  "doctype": "DocType",
  "document_type": "Document",
  "engine": "InnoDB",
@@ -18,7 +18,6 @@
   "practitioner_name",
   "department",
   "service_unit",
-  "appointment_date",
   "section_patient_details",
   "patient",
   "patient_name",
@@ -28,6 +27,10 @@
   "patient_age",
   "section_break_12",
   "duration",
+  "appointment_date",
+  "appointment_time",
+  "appointment_datetime",
+  "column_break_17",
   "service_request",
   "procedure_template",
   "get_procedure_from_encounter",
@@ -35,9 +38,6 @@
   "therapy_plan",
   "therapy_type",
   "get_prescribed_therapies",
-  "column_break_17",
-  "appointment_time",
-  "appointment_datetime",
   "add_video_conferencing",
   "event",
   "google_meet_link",
@@ -45,13 +45,12 @@
   "mode_of_payment",
   "billing_item",
   "invoiced",
+  "based_on_checkin",
   "column_break_2",
   "paid_amount",
   "ref_sales_invoice",
   "section_break_3",
   "referring_practitioner",
-  "position_in_queue",
-  "appointment_based_on_check_in",
   "reminded",
   "column_break_36",
   "notes"
@@ -106,7 +105,7 @@
    "in_filter": 1,
    "in_list_view": 1,
    "label": "Status",
-   "options": "\nScheduled\nOpen\nChecked In\nChecked Out\nClosed\nCancelled\nNo Show",
+   "options": "\nScheduled\nOpen\nClosed\nCancelled",
    "read_only": 1,
    "search_index": 1
   },
@@ -195,7 +194,7 @@
    "fieldtype": "Time",
    "in_list_view": 1,
    "label": "Time",
-   "mandatory_depends_on": "eval:doc.appointment_based_on_check_in == false && doc.appointment_for == \"Practitioner\";",
+   "mandatory_depends_on": "eval:doc.appointment_for == \"Practitioner\"",
    "read_only": 1
   },
   {
@@ -383,20 +382,6 @@
    "read_only": 1
   },
   {
-   "default": "0",
-   "fieldname": "appointment_based_on_check_in",
-   "fieldtype": "Check",
-   "label": "Appointment Based On Check In",
-   "read_only": 1
-  },
-  {
-   "fieldname": "position_in_queue",
-   "fieldtype": "Int",
-   "label": "Position In Queue",
-   "non_negative": 1,
-   "read_only": 1
-  },
-  {
    "fetch_from": "appointment_type.allow_booking_for",
    "fieldname": "appointment_for",
    "fieldtype": "Select",
@@ -416,16 +401,23 @@
    "fieldtype": "Column Break"
   },
   {
-    "fieldname": "service_request",
-    "fieldtype": "Link",
-    "label": "Service Request",
-    "options": "Service Request",
-    "read_only": 1,
-    "search_index": 1
+   "fieldname": "service_request",
+   "fieldtype": "Link",
+   "label": "Service Request",
+   "options": "Service Request",
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "based_on_checkin",
+   "fieldtype": "Check",
+   "label": "Day Appointment",
+   "read_only": 1
   }
  ],
  "links": [],
- "modified": "2023-06-10 13:39:03.455568",
+ "modified": "2024-01-12 11:29:34.115324",
  "modified_by": "Administrator",
  "module": "Healthcare",
  "name": "Patient Appointment",
@@ -479,3 +471,5 @@
  "track_changes": 1,
  "track_seen": 1
 }
+
+

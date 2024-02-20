@@ -1,13 +1,13 @@
 from . import __version__ as app_version  # noqa
 
 app_name = "healthcare"
-app_title = "Frappe Health"
-app_publisher = "earthians Health Informatics Pvt. Ltd."
-app_description = "Modern, Open Source HIS built on Frappe and ERPNext"
+app_title = "Healthcare"
+app_publisher = "healthcare"
+app_description = "healthcare"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"
-app_email = "info@earthianslive.com"
-app_license = "GNU GPL V3"
+app_email = "contact@frappe.io"
+app_license = "MIT"
 required_apps = ["erpnext"]
 
 # Includes in <head>
@@ -59,10 +59,8 @@ doctype_js = {"Sales Invoice": "public/js/sales_invoice.js"}
 
 # add methods and filters to jinja environment
 jinja = {
-	"methods": [
-		"healthcare.healthcare.doctype.diagnostic_report.diagnostic_report.diagnostic_report_print",
-		"healthcare.healthcare.utils.generate_barcodes",
-	]
+	"methods": "healthcare.healthcare.doctype.diagnostic_report.diagnostic_report.diagnostic_report_print",
+	# "filters": "healthcare.utils.jinja_filters"
 }
 
 # Installation
@@ -289,3 +287,5 @@ standard_queries = {
 treeviews = [
 	"Healthcare Service Unit",
 ]
+
+

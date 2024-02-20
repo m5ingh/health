@@ -75,3 +75,6 @@ def make_item_price(price_list, item, item_price):
 			"price_list_rate": item_price,
 		}
 	).insert(ignore_permissions=True, ignore_mandatory=True)
+
+
+

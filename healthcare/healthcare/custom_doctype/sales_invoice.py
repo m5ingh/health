@@ -1,5 +1,4 @@
 import frappe
-
 from erpnext.accounts.doctype.sales_invoice.sales_invoice import SalesInvoice
 
 
@@ -48,3 +47,5 @@ class HealthcareSalesInvoice(SalesInvoice):
 				item_line.medical_department = lab_test.department
 
 		self.set_missing_values(for_validate=True)
+
+

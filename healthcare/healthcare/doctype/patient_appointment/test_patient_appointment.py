@@ -6,15 +6,13 @@
 import datetime
 
 import frappe
+from erpnext.accounts.doctype.pos_profile.test_pos_profile import make_pos_profile
 from frappe.tests.utils import FrappeTestCase
 from frappe.utils import add_days, flt, get_time, getdate, now_datetime, nowdate
 
-from erpnext.accounts.doctype.pos_profile.test_pos_profile import make_pos_profile
-
 from healthcare.healthcare.doctype.patient_appointment.patient_appointment import (
 	check_is_new_patient,
-	check_payment_reqd,
-	invoice_appointment,
+	check_payment_fields_reqd,
 	make_encounter,
 	update_status,
 )
@@ -33,7 +31,7 @@ class TestPatientAppointment(FrappeTestCase):
 
 	def test_status(self):
 		patient, practitioner = create_healthcare_docs()
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 0)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 0)
 		appointment = create_appointment(patient, practitioner, nowdate())
 		self.assertEqual(appointment.status, "Open")
 		appointment = create_appointment(patient, practitioner, add_days(nowdate(), 2))
@@ -47,7 +45,7 @@ class TestPatientAppointment(FrappeTestCase):
 
 	def test_start_encounter(self):
 		patient, practitioner = create_healthcare_docs()
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 1)
 		appointment = create_appointment(patient, practitioner, add_days(nowdate(), 4), invoice=1)
 		appointment.reload()
 		self.assertEqual(appointment.invoiced, 1)
@@ -64,11 +62,11 @@ class TestPatientAppointment(FrappeTestCase):
 	def test_auto_invoicing(self):
 		patient, practitioner = create_healthcare_docs()
 		frappe.db.set_single_value("Healthcare Settings", "enable_free_follow_ups", 0)
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 0)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 0)
 		appointment = create_appointment(patient, practitioner, nowdate())
 		self.assertEqual(frappe.db.get_value("Patient Appointment", appointment.name, "invoiced"), 0)
 
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 1)
 		appointment = create_appointment(patient, practitioner, add_days(nowdate(), 2), invoice=1)
 		self.assertEqual(frappe.db.get_value("Patient Appointment", appointment.name, "invoiced"), 1)
 		sales_invoice_name = frappe.db.get_value(
@@ -85,56 +83,6 @@ class TestPatientAppointment(FrappeTestCase):
 			frappe.db.get_value("Sales Invoice", sales_invoice_name, "paid_amount"), appointment.paid_amount
 		)
 
-	def test_auto_invoicing_with_discount_amount(self):
-		patient, practitioner = create_healthcare_docs()
-		frappe.db.set_single_value("Healthcare Settings", "enable_free_follow_ups", 0)
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
-		appointment = create_appointment(
-			patient, practitioner, nowdate(), invoice=1, discount_amount=100
-		)
-		self.assertEqual(frappe.db.get_value("Patient Appointment", appointment.name, "invoiced"), 1)
-		sales_invoice_name = frappe.db.get_value(
-			"Sales Invoice Item", {"reference_dn": appointment.name}, "parent"
-		)
-		self.assertTrue(sales_invoice_name)
-		self.assertEqual(
-			frappe.db.get_value("Sales Invoice", sales_invoice_name, "company"),
-			appointment.company,
-		)
-		self.assertEqual(
-			frappe.db.get_value("Sales Invoice", sales_invoice_name, "patient"),
-			appointment.patient,
-		)
-		self.assertEqual(
-			frappe.db.get_value("Sales Invoice", sales_invoice_name, "paid_amount"),
-			(appointment.paid_amount - 100),
-		)
-
-	def test_auto_invoicing_with_discount_percentage(self):
-		patient, practitioner = create_healthcare_docs()
-		frappe.db.set_single_value("Healthcare Settings", "enable_free_follow_ups", 0)
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
-		appointment = create_appointment(
-			patient, practitioner, nowdate(), invoice=1, discount_percentage=10
-		)
-		self.assertEqual(frappe.db.get_value("Patient Appointment", appointment.name, "invoiced"), 1)
-		sales_invoice_name = frappe.db.get_value(
-			"Sales Invoice Item", {"reference_dn": appointment.name}, "parent"
-		)
-		self.assertTrue(sales_invoice_name)
-		self.assertEqual(
-			frappe.db.get_value("Sales Invoice", sales_invoice_name, "company"),
-			appointment.company,
-		)
-		self.assertEqual(
-			frappe.db.get_value("Sales Invoice", sales_invoice_name, "patient"),
-			appointment.patient,
-		)
-		self.assertEqual(
-			frappe.db.get_value("Sales Invoice", sales_invoice_name, "paid_amount"),
-			(appointment.paid_amount - (appointment.paid_amount * (10 / 100))),
-		)
-
 	def test_auto_invoicing_based_on_practitioner_department(self):
 		patient, practitioner = create_healthcare_docs()
 		frappe.db.set_value(
@@ -147,7 +95,7 @@ class TestPatientAppointment(FrappeTestCase):
 		)
 		medical_department = create_medical_department()
 		frappe.db.set_single_value("Healthcare Settings", "enable_free_follow_ups", 0)
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 1)
 		appointment_type = create_appointment_type(
 			{"medical_department": medical_department, "op_consulting_charge": 200}
 		)
@@ -176,7 +124,7 @@ class TestPatientAppointment(FrappeTestCase):
 
 	def test_auto_invoicing_based_on_department(self):
 		frappe.db.set_single_value("Healthcare Settings", "enable_free_follow_ups", 1)
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 1)
 		item = create_healthcare_service_items()
 		department_name = create_medical_department(id=111)  # "_Test Medical Department 111"
 		items = [
@@ -203,9 +151,6 @@ class TestPatientAppointment(FrappeTestCase):
 		appointment.company = "_Test Company"
 
 		appointment.save(ignore_permissions=True)
-		if frappe.db.get_single_value("Healthcare Settings", "show_payment_popup"):
-			invoice_appointment(appointment.name)
-		appointment.reload()
 
 		self.assertEqual(appointment.invoiced, 1)
 		self.assertEqual(appointment.billing_item, item)
@@ -218,7 +163,7 @@ class TestPatientAppointment(FrappeTestCase):
 
 	def test_auto_invoicing_based_on_service_unit(self):
 		frappe.db.set_single_value("Healthcare Settings", "enable_free_follow_ups", 0)
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 1)
 		item = create_healthcare_service_items()
 		service_unit_type = create_service_unit_type(id=11, allow_appointments=1)
 		service_unit = create_service_unit(
@@ -249,9 +194,6 @@ class TestPatientAppointment(FrappeTestCase):
 		appointment.company = "_Test Company"
 
 		appointment.save(ignore_permissions=True)
-		if frappe.db.get_single_value("Healthcare Settings", "show_payment_popup"):
-			invoice_appointment(appointment.name)
-		appointment.reload()
 
 		self.assertEqual(appointment.invoiced, 1)
 		self.assertEqual(appointment.billing_item, item)
@@ -273,7 +215,7 @@ class TestPatientAppointment(FrappeTestCase):
 			},
 		)
 		frappe.db.set_single_value("Healthcare Settings", "enable_free_follow_ups", 0)
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 1)
 
 		item = create_healthcare_service_items()
 		items = [{"op_consulting_charge_item": item, "op_consulting_charge": 300}]
@@ -314,7 +256,7 @@ class TestPatientAppointment(FrappeTestCase):
 		self.assertEqual(frappe.db.get_value("Fee Validity", fee_validity, "visited"), 0)
 
 		frappe.db.set_single_value("Healthcare Settings", "enable_free_follow_ups", 0)
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 1)
 		appointment = create_appointment(patient, practitioner, add_days(nowdate(), 1), invoice=1)
 		update_status(appointment.name, "Cancelled")
 		# check invoice cancelled
@@ -396,18 +338,18 @@ class TestPatientAppointment(FrappeTestCase):
 
 	def test_payment_should_be_mandatory_for_new_patient_appointment(self):
 		frappe.db.set_single_value("Healthcare Settings", "enable_free_follow_ups", 1)
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 1)
 		frappe.db.set_single_value("Healthcare Settings", "max_visits", 3)
 		frappe.db.set_single_value("Healthcare Settings", "valid_days", 30)
 
 		patient = create_patient()
 		assert check_is_new_patient(patient)
-		payment_required = check_payment_reqd(patient)
+		payment_required = check_payment_fields_reqd(patient)
 		assert payment_required is True
 
 	def test_sales_invoice_should_be_generated_for_new_patient_appointment(self):
 		patient, practitioner = create_healthcare_docs()
-		frappe.db.set_single_value("Healthcare Settings", "show_payment_popup", 1)
+		frappe.db.set_single_value("Healthcare Settings", "automate_appointment_invoicing", 1)
 		invoice_count = frappe.db.count("Sales Invoice")
 
 		assert check_is_new_patient(patient)
@@ -522,51 +464,6 @@ class TestPatientAppointment(FrappeTestCase):
 		test_appointment_reschedule(self, appointment)
 		test_appointment_cancel(self, appointment)
 
-	def test_appointment_based_on_check_in(self):
-		from healthcare.healthcare.doctype.patient_appointment.patient_appointment import OverlapError
-
-		patient, practitioner = create_healthcare_docs(id=1)
-		patient_1, practitioner_1 = create_healthcare_docs(id=2)
-
-		create_appointment(
-			patient,
-			practitioner,
-			nowdate(),
-			appointment_based_on_check_in=True,
-			appointment_time="09:00",
-		)
-		appointment_1 = create_appointment(
-			patient,
-			practitioner,
-			nowdate(),
-			save=0,
-			appointment_based_on_check_in=True,
-			appointment_time="09:00",
-		)
-		# same patient cannot have multiple appointments for same practitioner
-		self.assertRaises(OverlapError, appointment_1.save)
-
-		appointment_1 = create_appointment(
-			patient,
-			practitioner_1,
-			nowdate(),
-			save=0,
-			appointment_based_on_check_in=True,
-			appointment_time="09:00",
-		)
-		# same patient cannot have multiple appointments for different practitioners
-		self.assertRaises(OverlapError, appointment_1.save)
-
-		appointment_2 = create_appointment(
-			patient_1,
-			practitioner,
-			nowdate(),
-			appointment_based_on_check_in=True,
-			appointment_time="09:00",
-		)
-		# different pracititoner can have multiple same time and date appointments for different patients
-		self.assertTrue(appointment_2.name)
-
 
 def create_healthcare_docs(id=0):
 	patient = create_patient(id)
@@ -649,10 +546,6 @@ def create_appointment(
 	appointment_type=None,
 	save=1,
 	department=None,
-	appointment_based_on_check_in=None,
-	appointment_time=None,
-	discount_percentage=0,
-	discount_amount=0,
 ):
 	item = create_healthcare_service_items()
 	frappe.db.set_single_value("Healthcare Settings", "inpatient_visit_charge_item", item)
@@ -672,14 +565,8 @@ def create_appointment(
 		appointment.mode_of_payment = "Cash"
 	if procedure_template:
 		appointment.procedure_template = create_clinical_procedure_template().get("name")
-	if appointment_based_on_check_in:
-		appointment.appointment_based_on_check_in = True
-	if appointment_time:
-		appointment.appointment_time = appointment_time
 	if save:
 		appointment.save(ignore_permissions=True)
-		if invoice or frappe.db.get_single_value("Healthcare Settings", "show_payment_popup"):
-			invoice_appointment(appointment.name, discount_percentage, discount_amount)
 
 	return appointment
 
@@ -715,7 +602,7 @@ def create_clinical_procedure_template():
 	return template
 
 
-def create_appointment_type(args=None):  # nosemgrep
+def create_appointment_type(args=None):
 	if not args:
 		args = frappe.local.form_dict
 
@@ -807,4 +694,6 @@ def test_appointment_reschedule(self, appointment):
 
 def test_appointment_cancel(self, appointment):
 	update_status(appointment.name, "Cancelled")
-	self.assertTrue(frappe.db.exists("Event", {"name": appointment.event, "status": "Cancelled"}))
+	self.assertTrue(frappe.db.exists("Event", {"name": appointment.event, "event_type": "Cancelled"}))
+
+
