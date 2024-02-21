@@ -3,24 +3,27 @@
 # For license information, please see license.txt
 
 
+import base64
 import json
 import math
 
 import frappe
-from erpnext.setup.utils import insert_record
 from frappe import _
 from frappe.utils import cstr, flt, get_link_to_form, rounded, time_diff_in_hours
 from frappe.utils.formatters import format_value
+
+from erpnext.setup.utils import insert_record
 
 from healthcare.healthcare.doctype.healthcare_settings.healthcare_settings import (
 	get_income_account,
 )
 from healthcare.healthcare.doctype.lab_test.lab_test import create_multiple
+from healthcare.healthcare.doctype.observation.observation import add_observation
+from healthcare.healthcare.doctype.observation_template.observation_template import (
+	get_observation_template_details,
+)
 from healthcare.setup import setup_healthcare
 
-from healthcare.healthcare.doctype.observation.observation import add_observation
-
-from healthcare.healthcare.doctype.observation_template.observation_template import get_observation_template_details
 
 @frappe.whitelist()
 def get_healthcare_services_to_invoice(patient, company):
@@ -37,6 +40,7 @@ def get_healthcare_services_to_invoice(patient, company):
 		items_to_invoice += get_therapy_plans_to_invoice(patient, company)
 		items_to_invoice += get_therapy_sessions_to_invoice(patient, company)
 		items_to_invoice += get_service_requests_to_invoice(patient, company)
+		items_to_invoice += get_observations_to_invoice(patient, company)
 		return items_to_invoice
 
 
@@ -165,6 +169,31 @@ def get_lab_tests_to_invoice(patient, company):
 	return lab_tests_to_invoice
 
 
+def get_observations_to_invoice(patient, company):
+	observations_to_invoice = []
+	observations = frappe.get_list(
+		"Observation",
+		fields=["name", "observation_template"],
+		filters={
+			"patient": patient.name,
+			"company": company,
+			"invoiced": False,
+			"docstatus": 1,
+			"service_request": "",
+		},
+	)
+	for observation in observations:
+		item, is_billable = frappe.get_cached_value(
+			"Observation Template", observation.observation_template, ["item", "is_billable"]
+		)
+		if is_billable:
+			observations_to_invoice.append(
+				{"reference_type": "Observation", "reference_name": observation.name, "service": item}
+			)
+
+	return observations_to_invoice
+
+
 def get_clinical_procedures_to_invoice(patient, company):
 	clinical_procedures_to_invoice = []
 	procedures = frappe.get_list(
@@ -195,7 +224,6 @@ def get_clinical_procedures_to_invoice(patient, company):
 			and procedure.status == "Completed"
 			and not procedure.consumption_invoiced
 		):
-
 			service_item = frappe.db.get_single_value(
 				"Healthcare Settings", "clinical_procedure_consumable_item"
 			)
@@ -337,7 +365,12 @@ def get_service_requests_to_invoice(patient, company):
 	service_requests = frappe.get_list(
 		"Service Request",
 		fields=["*"],
-		filters={"patient": patient.name, "company": company, "invoiced": 0, "docstatus": 1},
+		filters={
+			"patient": patient.name,
+			"company": company,
+			"billing_status": ["!=", "Invoiced"],
+			"docstatus": 1,
+		},
 	)
 	for service_request in service_requests:
 		item, is_billable = frappe.get_cached_value(
@@ -487,20 +520,6 @@ def get_healthcare_service_item(is_inpatient):
 	return service_item
 
 
-def get_practitioner_charge(practitioner, is_inpatient):
-	if is_inpatient:
-		practitioner_charge = frappe.db.get_value(
-			"Healthcare Practitioner", practitioner, "inpatient_visit_charge"
-		)
-	else:
-		practitioner_charge = frappe.db.get_value(
-			"Healthcare Practitioner", practitioner, "op_consulting_charge"
-		)
-	if practitioner_charge:
-		return practitioner_charge
-	return False
-
-
 def manage_invoice_validate(doc, method):
 	if doc.service_unit and len(doc.items):
 		for item in doc.items:
@@ -518,7 +537,9 @@ def manage_invoice_submit_cancel(doc, method):
 				# TODO check
 				# if frappe.get_meta(item.reference_dt).has_field("invoiced"):
 				set_invoiced(item, method, doc.name)
-		if method == "on_submit":
+		if method == "on_submit" and frappe.db.get_single_value(
+			"Healthcare Settings", "create_observation_on_si_submit"
+		):
 			create_sample_collection_and_observation(doc)
 
 	if method == "on_submit":
@@ -526,7 +547,7 @@ def manage_invoice_submit_cancel(doc, method):
 			create_multiple("Sales Invoice", doc.name)
 
 		if (
-			not frappe.db.get_single_value("Healthcare Settings", "automate_appointment_invoicing")
+			not frappe.db.get_single_value("Healthcare Settings", "show_payment_popup")
 			and frappe.db.get_single_value("Healthcare Settings", "enable_free_follow_ups")
 			and doc.items
 		):
@@ -535,6 +556,23 @@ def manage_invoice_submit_cancel(doc, method):
 					fee_validity = frappe.db.exists("Fee Validity", {"patient_appointment": item.reference_dn})
 					if fee_validity:
 						frappe.db.set_value("Fee Validity", fee_validity, "sales_invoice_ref", doc.name)
+
+	if method == "on_cancel":
+		if doc.items and (doc.additional_discount_percentage or doc.discount_amount):
+			for item in doc.items:
+				if (
+					item.get("reference_dt")
+					and item.get("reference_dn")
+					and item.get("reference_dt") == "Patient Appointment"
+				):
+					frappe.db.set_value(
+						item.get("reference_dt"),
+						item.get("reference_dn"),
+						{
+							"paid_amount": item.amount,
+							"ref_sales_invoice": None,
+						},
+					)
 
 
 def set_invoiced(item, method, ref_invoice=None):
@@ -551,8 +589,9 @@ def set_invoiced(item, method, ref_invoice=None):
 			frappe.db.set_value(item.reference_dt, item.reference_dn, "consumption_invoiced", invoiced)
 		else:
 			frappe.db.set_value(item.reference_dt, item.reference_dn, "invoiced", invoiced)
-	# else:
-	# 	frappe.db.set_value(item.reference_dt, item.reference_dn, "invoiced", invoiced)
+	else:
+		if item.reference_dt not in ["Service Request", "Medication Request"]:
+			frappe.db.set_value(item.reference_dt, item.reference_dn, "invoiced", invoiced)
 
 	if item.reference_dt == "Patient Appointment":
 		if frappe.db.get_value("Patient Appointment", item.reference_dn, "procedure_template"):
@@ -570,7 +609,6 @@ def set_invoiced(item, method, ref_invoice=None):
 		manage_prescriptions(
 			invoiced, item.reference_dt, item.reference_dn, "Clinical Procedure", "procedure_created"
 		)
-
 	elif item.reference_dt in ["Service Request", "Medication Request"]:
 		# if order is invoiced, set both order and service transaction as invoiced
 		hso = frappe.get_doc(item.reference_dt, item.reference_dn)
@@ -587,11 +625,6 @@ def set_invoiced(item, method, ref_invoice=None):
 				"Lab Test Template": "Lab Test"
 				# 'Healthcare Service Unit': 'Inpatient Occupancy'
 			}
-
-			dt = template_map.get(hso.template_dt)
-
-			if dt and frappe.db.exists(dt, {"service_request": item.reference_dn}):
-				frappe.db.set_value(dt, {"service_request": item.reference_dn}, "invoiced", invoiced)
 
 
 def validate_invoiced_on_submit(item):
@@ -651,15 +684,20 @@ def get_drugs_to_invoice(encounter):
 					},
 				)
 				for medication_request in medication_requests:
-					item, is_billable = frappe.get_cached_value(
-						"Medication", medication_request.medication, ["item", "is_billable"]
-					)
+					if medication_request.medication:
+						is_billable = frappe.get_cached_value(
+							"Medication", medication_request.medication, ["is_billable"]
+						)
+					else:
+						is_billable = frappe.db.exists(
+							"Item", {"name": medication_request.medication_item, "disabled": False}
+						)
 
 					description = ""
 					if medication_request.dosage and medication_request.period:
 						description = _("{0} for {1}").format(medication_request.dosage, medication_request.period)
 
-					if is_billable:
+					if medication_request.medication_item and is_billable:
 						billable_order_qty = medication_request.get("quantity", 1) - medication_request.get(
 							"qty_invoiced", 0
 						)
@@ -678,7 +716,7 @@ def get_drugs_to_invoice(encounter):
 							{
 								"reference_type": "Medication Request",
 								"reference_name": medication_request.name,
-								"drug_code": item,
+								"drug_code": medication_request.medication_item,
 								"quantity": billable_order_qty,
 								"description": description,
 							}
@@ -914,7 +952,6 @@ def render_doc_as_html(doctype, docname, exclude_fields=None):
 		""".format(
 			section_html, html
 		)
-
 	return {"html": doc_html}
 
 
@@ -1025,17 +1062,17 @@ def get_medical_codes(template_dt, template_dn, code_standard=None):
 	filters = {"parent": template_dn, "parenttype": template_dt}
 
 	if code_standard:
-		filters["medical_code_standard"] = code_standard
+		filters["code_system"] = code_standard
 
 	return frappe.db.get_all(
 		"Codification Table",
 		filters=filters,
 		fields=[
-			"medical_code",
+			"code_value",
 			"code",
 			"system",
-			"description",
-			"medical_code_standard",
+			"definition",
+			"code_system",
 		],
 	)
 
@@ -1048,125 +1085,201 @@ def company_on_trash(doc, method):
 
 
 def create_sample_collection_and_observation(doc):
-	insert_diagnostic_report(doc)
-	query = f"""
-		select
-			ot.name
-		from
-			`tabSales Invoice Item` as sii left join
-			`tabService Request` as sr on sr.name = sii.reference_dn left join
-			`tabObservation Template` as ot on ot.name = sr.template_dn
-		where
-			sii.parent = '{doc.name}' and sr.template_dt = 'Observation Template'
-	"""
-	data = frappe.db.sql(query, as_dict=True)
-	# to include item direclty entered
+	meta = frappe.get_meta("Sales Invoice Item", cached=True)
+	diag_report_required = False
+	data = []
 	for item in doc.items:
-		if not item.get("reference_dt") and not item.get("reference_dn"):
-			template_id = frappe.db.exists(
-				"Observation Template", {"item": item.item_code}
-			)
-			if template_id:
-				data.append({"name": template_id})
+		# to set patient in item table if not set
+		if meta.has_field("patient") and not item.patient:
+			item.patient = doc.patient
+
+		# ignore if already created from service request
+		if item.get("reference_dt") == "Service Request" and item.get("reference_dn"):
+			if frappe.db.exists(
+				"Observation Sample Collection", {"service_request": item.get("reference_dn")}
+			) or frappe.db.exists(
+				"Sample Collection", {"service_request": item.get("reference_dn")}
+			):
+				continue
+
+		template_id = frappe.db.exists("Observation Template", {"item": item.item_code})
+		if template_id:
+			temp_dict = {}
+			temp_dict["name"] = template_id
+			if meta.has_field("patient") and item.get("patient"):
+				temp_dict["patient"] = item.get("patient")
+				temp_dict["child"] = item.get("name")
+			data.append(temp_dict)
+
 	out_data = []
 	for d in data:
-		out_data.append(
-			frappe.get_value(
-				"Observation Template",
-				d.get("name"),
-				[
-					"sample_type",
-					"sample",
-					"medical_department",
-					"container_closure_color",
-					"name",
-					"sample_qty",
-					"has_component",
-					"sample_collection_required",
-				],
-				as_dict=True,
-			)
+		observation_template = frappe.get_value(
+			"Observation Template",
+			d.get("name"),
+			[
+				"sample_type",
+				"sample",
+				"medical_department",
+				"container_closure_color",
+				"name",
+				"sample_qty",
+				"has_component",
+				"sample_collection_required",
+			],
+			as_dict=True,
 		)
+		if observation_template:
+			observation_template["patient"] = d.get("patient")
+			observation_template["child"] = d.get("child")
+			out_data.append(observation_template)
+	if not meta.has_field("patient"):
+		sample_collection = create_sample_collection(doc, doc.patient)
+	else:
+		grouped = {}
+		for grp in out_data:
+			grouped.setdefault(grp.patient, []).append(grp)
+		if grouped:
+			out_data = grouped
 
-	sample_collection = create_sample_collection(doc)
 	for grp in out_data:
-		if grp.get("has_component"):
-			# parent observation
-			parent_observation = add_observation(
-					doc.patient,
-					grp.get("name"),
-					invoice=doc.name,
+		patient = doc.patient
+		if meta.has_field("patient") and grp:
+			patient = grp
+		if meta.has_field("patient"):
+			sample_collection = create_sample_collection(doc, patient)
+			for obs in out_data[grp]:
+				(sample_collection, diag_report_required,) = insert_observation_and_sample_collection(
+					doc, patient, obs, sample_collection, obs.get("child")
 				)
+			if sample_collection and len(sample_collection.get("observation_sample_collection")) > 0:
+				sample_collection.save(ignore_permissions=True)
 
-			sample_reqd_component_obs, non_sample_reqd_component_obs = get_observation_template_details(grp.get("name"))
-			# create observation for non sample_collection_reqd grouped templates
-
-			if len(non_sample_reqd_component_obs)>0:
-				for comp in non_sample_reqd_component_obs:
-					add_observation(
-						doc.patient,
-						comp,
-						parent=parent_observation,
-						invoice=doc.name
-					)
-			# create sample_colleciton child row for  sample_collection_reqd grouped templates
-			if len(sample_reqd_component_obs)>0:
-				sample_collection.append(
-					"observation_sample_collection",
-					{
-						"observation_template": grp.get("name"),
-						"container_closure_color": grp.get("color"),
-						"sample": grp.get("sample"),
-						"sample_type": grp.get("sample_type"),
-						"component_observation_parent": parent_observation,
-					},
-				)
-
+			if diag_report_required:
+				insert_diagnostic_report(doc, patient, sample_collection.name)
 		else:
-			# create observation for non sample_collection_reqd individual templates
-			if not grp.get("sample_collection_required"):
-				add_observation(
-					doc.patient,
-					grp.get("name"),
-					invoice=doc.name,
-				)
-			else:
-				# create sample_colleciton child row for  sample_collection_reqd individual templates
-				sample_collection.append(
-					"observation_sample_collection",
-					{
-						"observation_template": grp.get("name"),
-						"container_closure_color": grp.get("color"),
-						"sample": grp.get("sample"),
-						"sample_type": grp.get("sample_type"),
-					},
-				)
+			sample_collection, diag_report_required = insert_observation_and_sample_collection(
+				doc, patient, grp, sample_collection
+			)
 
-	if (
-		sample_collection
-		and len(sample_collection.get("observation_sample_collection")) > 0
-	):
-		sample_collection.save(ignore_permissions=True)
+	if not meta.has_field("patient"):
+		if sample_collection and len(sample_collection.get("observation_sample_collection")) > 0:
+			sample_collection.save(ignore_permissions=True)
+
+		if diag_report_required:
+			insert_diagnostic_report(doc, patient, sample_collection.name)
 
 
-def create_sample_collection(doc):
-	patient = frappe.get_doc("Patient", doc.patient)
+def create_sample_collection(doc, patient):
+	patient = frappe.get_doc("Patient", patient)
 	sample_collection = frappe.new_doc("Sample Collection")
 	sample_collection.patient = patient.name
 	sample_collection.patient_age = patient.get_age()
 	sample_collection.patient_sex = patient.sex
 	sample_collection.company = doc.company
+	sample_collection.referring_practitioner = doc.ref_practitioner
 	sample_collection.reference_doc = doc.doctype
 	sample_collection.reference_name = doc.name
 	return sample_collection
 
-def insert_diagnostic_report(doc):
+
+def insert_diagnostic_report(doc, patient, sample_collection=None):
 	diagnostic_report = frappe.new_doc("Diagnostic Report")
 	diagnostic_report.company = doc.company
-	diagnostic_report.patient = doc.patient
+	diagnostic_report.patient = patient
 	diagnostic_report.ref_doctype = doc.doctype
 	diagnostic_report.docname = doc.name
-	# diagnostic_report.sample_collection = doc.name
+	diagnostic_report.practitioner = doc.ref_practitioner
+	diagnostic_report.sample_collection = sample_collection
 	diagnostic_report.save(ignore_permissions=True)
+
+
+def insert_observation_and_sample_collection(doc, patient, grp, sample_collection, child=None):
+	diag_report_required = False
+	if grp.get("has_component"):
+		diag_report_required = True
+		# parent observation
+		parent_observation = add_observation(
+			patient=patient,
+			template=grp.get("name"),
+			practitioner=doc.ref_practitioner,
+			invoice=doc.name,
+			child=child if child else "",
+		)
+
+		sample_reqd_component_obs, non_sample_reqd_component_obs = get_observation_template_details(
+			grp.get("name")
+		)
+		# create observation for non sample_collection_reqd grouped templates
+
+		if len(non_sample_reqd_component_obs) > 0:
+			for comp in non_sample_reqd_component_obs:
+				add_observation(
+					patient=patient,
+					template=comp,
+					practitioner=doc.ref_practitioner,
+					parent=parent_observation,
+					invoice=doc.name,
+					child=child if child else "",
+				)
+		# create sample_colleciton child row for  sample_collection_reqd grouped templates
+		if len(sample_reqd_component_obs) > 0:
+			sample_collection.append(
+				"observation_sample_collection",
+				{
+					"observation_template": grp.get("name"),
+					"container_closure_color": grp.get("color"),
+					"sample": grp.get("sample"),
+					"sample_type": grp.get("sample_type"),
+					"component_observation_parent": parent_observation,
+					"reference_child": child if child else "",
+				},
+			)
+
+	else:
+		diag_report_required = True
+		# create observation for non sample_collection_reqd individual templates
+		if not grp.get("sample_collection_required"):
+			add_observation(
+				patient=patient,
+				template=grp.get("name"),
+				practitioner=doc.ref_practitioner,
+				invoice=doc.name,
+				child=child if child else "",
+			)
+		else:
+			# create sample_colleciton child row for  sample_collection_reqd individual templates
+			sample_collection.append(
+				"observation_sample_collection",
+				{
+					"observation_template": grp.get("name"),
+					"container_closure_color": grp.get("color"),
+					"sample": grp.get("sample"),
+					"sample_type": grp.get("sample_type"),
+					"reference_child": child if child else "",
+				},
+			)
+	return sample_collection, diag_report_required
+
+
+@frappe.whitelist()
+def generate_barcodes(in_val):
+	from io import BytesIO
+
+	from barcode import Code128
+	from barcode.writer import ImageWriter
+
+	stream = BytesIO()
+	Code128(str(in_val), writer=ImageWriter()).write(
+		stream,
+		{
+			"module_height": 3,
+			"text_distance": 0.9,
+			"write_text": False,
+		},
+	)
+	barcode_base64 = base64.b64encode(stream.getbuffer()).decode()
+	stream.close()
+
+	return barcode_base64
 
 
