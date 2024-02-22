@@ -51,9 +51,7 @@
 					{% elif patients|length == 1 %}
 						<option value="{{patients[0].patient}}">{{patients[0].full_name}}</option>
 					{% else %}
-                                                <p class="text-muted">
-                    					<a href="{{ frappe.get_url() }}/add_patient">{{ _('No Patient registered for user. Add Patient') }}</a>
-                				</p>
+                    				<a href="{{ frappe.get_url() }}/add_patient">No Patient registered for user. Add Patient</a>
 					{% endif %}
 				</select>
 			</div>
