@@ -3,13 +3,15 @@ function add_patient() {
     let first_name = $("#first_name").val();
     let gender = $("#gender option:selected").val();
     let email = $("#email").val();
+    let mobile = $("#mobile").val();
     // Make a request to the server-side API to add a new patient
     frappe.call({
         method: 'healthcare.www.add_patient.add_patient_reg',
         args: {
             first_name: first_name,
             gender: gender,
-            email: email
+            email: email,
+            mobile: mobile
         },
         callback: (r) => {
             if (!r.exc && r.message) {
