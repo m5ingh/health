@@ -23,6 +23,6 @@ def add_patient_reg(first_name, gender,email,mobile):
 
     return {
         'name': new_patient.name,
-        'message': 'Patient added successfully!'
+        'message': 'Patient added successfully!',
         'redirect_url': redirect_url
     }
