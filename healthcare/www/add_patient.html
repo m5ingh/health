@@ -9,6 +9,7 @@
         <div class="col-sm-12">
             <ul class="breadcrumb">
                 <li><a href="/" class="normal-bc-link">{{ _('Home') }}</a> > </li>
+                <li class="selected-bc-link">&nbsp;{{ _('Add Patient') }}</a></li>
             </ul>
         </div>
 
@@ -23,7 +24,7 @@
                 <div class="row">
                     <!-- Add input fields for first_name, gender, and use frappe.session.user for email -->
                     <input type="text" id="first_name" placeholder="Enter First name" class="form-control m-3 col-md" required>
-                    <input type="tel" id="mobile" name="mobile" pattern="[0-9]{10}" required>
+                    <input type="tel" id="mobile" name="mobile" pattern="[0-9]{10}" class="form-control m-3 col-md" required>
                     <input type="email" id="email" placeholder="Email" value="{{ frappe.session.user }}" class="form-control m-3 col-md" readonly>
                     <select id="gender" class="form-control m-3 col-md">
                         <option value="Male">Male</option>
