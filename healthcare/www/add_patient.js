@@ -17,10 +17,7 @@ function add_patient() {
             if (!r.exc && r.message) {
                 // Success message or redirect to a success page
                 frappe.msgprint(__("Patient added successfully! Redirecting"));
-                // Redirect to the specified URL
-                if (r.redirect_url) {
-                    window.location.href = r.redirect_url;
-                }
+                window.location.href = '/departments';
             } else {
                 // Handle errors
                 frappe.msgprint(__("Error adding patient. Please try again."));
