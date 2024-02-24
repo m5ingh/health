@@ -267,7 +267,7 @@ function book_appointment(){
 					}
 					frappe.utils.setup_timer(5, 0, $(".time"));
 					setTimeout(() => {
-						window.location.href = /view-and-edit-appointments;
+						window.location.href = /url;
 					}, 5000);
 			}
 			$(".portal-full-section").removeClass("freeze-div");
