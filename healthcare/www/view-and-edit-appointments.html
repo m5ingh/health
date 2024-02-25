@@ -4,14 +4,21 @@
 {{ include_style('healthcare-web.bundle.css') }}
 <section class="portal-main-section">
     <div class="col-sm-12 c-section portal-full-section">
+        <!-- Breadcrumb Section -->
+        <div class="col-sm-12">
+            <ul class="breadcrumb">
+                <li><a href="/" class="normal-bc-link">{{ _('Home') }}</a> > </li>
+                <li class="selected-bc-link">&nbsp;{{ _('Appointments') }}</a></li>
+            </ul>
+        </div>
+
         <div class="col-sm-12">
             <h2>Your Appointments</h2>
             <div id="appointments-container"></div>
         </div>
     </div>
-</section>
-
-<script>
+    <script src="view-and-edit-appointments.js"></script>
+    <script>
     frappe.ready(() => {
         initializePage();
     });
@@ -21,9 +28,7 @@
     }
 
     // Include appointment.js here
-    <script src ="view-and-edit-appointments.js></script
-</script>
-<script src ="view-and-edit-appointments.js></script>
-
+    </script>
+</section>
 
 {% endblock %}
