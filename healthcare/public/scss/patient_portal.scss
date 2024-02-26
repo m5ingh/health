@@ -143,18 +143,6 @@
     }
 }
 
-@media (max-width: 740px) {
-    .success-page {
-        padding: 2rem; /* Adjust the padding as needed */
-        margin: 0; /* Remove or adjust margin as needed */
-    }
-
-    .appointment-success-div {
-        padding: 2rem; /* Adjust the padding as needed */
-        display: none; /* Make sure it is hidden initially */
-    }
-}
-
 @media (min-width: 700px) {
     .fh-btn-grp {
         float:left;
@@ -228,7 +216,7 @@
     display: block; font-size: 12px;
 }
 .appointment-success-div {
-    padding: 5rem 30rem 5rem 30rem; display:none;
+    display:none;
 }
 .fh-no-cards {
     text-align: center; vertical-align: middle;
