@@ -1,9 +1,12 @@
 # healthcare/www/add_patient.py
 import frappe
 
+no_cache = 1
+
 @frappe.whitelist()
-def add_patient_reg(first_name, gender,email,mobile):
+def add_patient_reg(first_name, gender,email,mobile,context):
     # Check if the user is logged in
+    context.no_cache = 1
     if frappe.session.user == 'Guest':
         frappe.throw(_("You need to be logged in to access this page"), frappe.PermissionError)
 
