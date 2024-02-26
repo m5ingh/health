@@ -7,11 +7,12 @@ async function initializePage() {
 }
 
 async function fetchAndDisplayAppointments() {
-    // Use Frappe API to fetch appointments associated with the logged-in user
-    const response = await frappe.call({
-        method: 'healthcare.www.view-and-edit-appointments.get_user_appointments',
-        args: { user: frappe.session.user },
-    });
+    try {
+        // Use Frappe API to fetch appointments associated with the logged-in user
+        const response = await frappe.call({
+            method: 'healthcare.www.view-and-edit-appointments.get_user_appointments',
+            args: { user: frappe.session.user },
+        });
 
         if (response.message && response.message.length > 0) {
             renderAppointments(response.message);
@@ -27,24 +28,22 @@ async function fetchAndDisplayAppointments() {
 }
 
 function renderAppointments(appointments) {
-    // Logic to render appointments on the HTML page
-    // You can use JavaScript DOM manipulation or a template library like Handlebars
-    // Example: Update the DOM with appointment details
     const appointmentsContainer = document.getElementById('appointments-container');
 
     appointments.forEach(appointment => {
         const appointmentElement = document.createElement('div');
         appointmentElement.innerHTML = `
-            <p>Date: ${appointment.date}</p>
-            <p>Time: ${appointment.time}</p>
+            <p>Date: ${appointment.appointment_date}</p>
+            <p>Time: ${appointment.appointment_time}</p>
             <p>Practitioner: ${appointment.practitioner}</p>
-            <button onclick="viewAppointment('${appointment.id}')">View</button>
-            <button onclick="cancelAppointment('${appointment.id}')">Cancel</button>
+            <button onclick="viewAppointment('${appointment.name}')">View</button>
+            <button onclick="cancelAppointment('${appointment.name}')">Cancel</button>
             <hr>
         `;
         appointmentsContainer.appendChild(appointmentElement);
     });
 }
+
 
 function viewAppointment(appointmentId) {
     // Logic to handle viewing appointment details
