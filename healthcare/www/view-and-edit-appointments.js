@@ -14,6 +14,8 @@ async function fetchAndDisplayAppointments() {
             args: { user: frappe.session.user },
         });
 
+        console.log(response);
+
         if (response.message && response.message.length > 0) {
             renderAppointments(response.message);
         } else {
