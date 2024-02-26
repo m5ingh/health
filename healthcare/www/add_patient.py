@@ -3,6 +3,10 @@ import frappe
 
 @frappe.whitelist()
 def add_patient_reg(first_name, gender,email,mobile):
+    # Check if the user is logged in
+    if frappe.session.user == 'Guest':
+        frappe.throw("You need to be logged in to add a new patient", frappe.PermissionError)
+
     invite_user = 0
     new_patient = frappe.get_doc({
         'doctype': 'Patient',
