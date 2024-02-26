@@ -8,13 +8,22 @@ async function initializePage() {
 
 async function fetchAndDisplayAppointments() {
     // Use Frappe API to fetch appointments associated with the logged-in user
-    const appointments = await frappe.call({
+    const response = await frappe.call({
         method: 'healthcare.www.view-and-edit-appointments.get_user_appointments',
         args: { user: frappe.session.user },
     });
 
-    // Display the fetched appointments on the page
-    renderAppointments(appointments.message);
+        if (response.message && response.message.length > 0) {
+            renderAppointments(response.message);
+        } else {
+            // Handle case where no appointments are found
+            const appointmentsContainer = document.getElementById('appointments-container');
+            appointmentsContainer.innerHTML = '<p>No appointments found.</p>';
+        }
+    } catch (error) {
+        console.error('Error fetching appointments:', error);
+        // Handle error, show message, or log it as needed
+    }
 }
 
 function renderAppointments(appointments) {
