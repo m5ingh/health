@@ -1,7 +1,8 @@
 function fetchAndDisplayAppointments() {
 
     // Use Frappe API to fetch appointments associated with the logged-in user
-    let patient_id = '{{ frappe.session.user }}';
+    let patient_id = document.getElementById('patient-list');
+
     frappe.call({
         method: 'healthcare.www.view-and-edit-appointments.get_user_appointments',
         args: { user: patient_id.value },
