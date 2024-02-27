@@ -21,6 +21,11 @@
     <script>
     var patient_list = "{{patients}}"
     </script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetchAndDisplayAppointments();
+        });
+    </script>
 </section>
 
 {% endblock %}
