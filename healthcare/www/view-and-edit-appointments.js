@@ -2,21 +2,19 @@ function fetchAndDisplayAppointments() {
 
         // Use Frappe API to fetch appointments associated with the logged-in user
         let patient_id = document.getElementById('patient-list');
-        const response = await frappe.call({
+        frappe.call({
             method: 'healthcare.www.view-and-edit-appointments.get_user_appointments',
             args: { user: patient_id.value },
-        });
-
-        console.log(response);
-
-        if (response.message && response.message.length > 0) {
-            renderAppointments(response.message);
+        },
+        callback: (r) => {
+          if (!r.exc && r.message) {
+                renderAppointments(response.message);
         } else {
             // Handle case where no appointments are found
             const appointmentsContainer = document.getElementById('appointments-container');
             appointmentsContainer.innerHTML = '<p>No appointments found.</p>';
         }
-
+        });
 }
 
 function renderAppointments(appointments) {
