@@ -9,9 +9,10 @@ async function initializePage() {
 async function fetchAndDisplayAppointments() {
     try {
         // Use Frappe API to fetch appointments associated with the logged-in user
+        let patient_id = document.getElementById('patient-list');
         const response = await frappe.call({
             method: 'healthcare.www.view-and-edit-appointments.get_user_appointments',
-            args: { user: frappe.session.user },
+            args: { user: patient_id.value },
         });
 
         console.log(response);
