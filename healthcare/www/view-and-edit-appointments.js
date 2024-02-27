@@ -1,20 +1,20 @@
 function fetchAndDisplayAppointments() {
 
-        // Use Frappe API to fetch appointments associated with the logged-in user
-        let patient_id = document.getElementById('patient-list');
-        frappe.call({
-            method: 'healthcare.www.view-and-edit-appointments.get_user_appointments',
-            args: { user: patient_id.value },
-        },
+    // Use Frappe API to fetch appointments associated with the logged-in user
+    let patient_id = document.getElementById('patient-list');
+    frappe.call({
+        method: 'healthcare.www.view-and-edit-appointments.get_user_appointments',
+        args: { user: patient_id.value },
         callback: (r) => {
-          if (!r.exc && r.message) {
-                renderAppointments(response.message);
-        } else {
-            // Handle case where no appointments are found
-            const appointmentsContainer = document.getElementById('appointments-container');
-            appointmentsContainer.innerHTML = '<p>No appointments found.</p>';
+            if (!r.exc && r.message) {
+                renderAppointments(r.message);  // Corrected from response.message to r.message
+            } else {
+                // Handle case where no appointments are found
+                const appointmentsContainer = document.getElementById('appointments-container');
+                appointmentsContainer.innerHTML = '<p>No appointments found.</p>';
+            }
         }
-        });
+    });
 }
 
 function renderAppointments(appointments) {
@@ -33,7 +33,6 @@ function renderAppointments(appointments) {
         appointmentsContainer.appendChild(appointmentElement);
     });
 }
-
 
 function viewAppointment(appointmentId) {
     // Logic to handle viewing appointment details
