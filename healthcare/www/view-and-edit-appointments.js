@@ -1,13 +1,5 @@
-frappe.ready(async () => {
-    initializePage();
-});
+function fetchAndDisplayAppointments() {
 
-async function initializePage() {
-    await fetchAndDisplayAppointments();
-}
-
-async function fetchAndDisplayAppointments() {
-    try {
         // Use Frappe API to fetch appointments associated with the logged-in user
         let patient_id = document.getElementById('patient-list');
         const response = await frappe.call({
@@ -24,10 +16,7 @@ async function fetchAndDisplayAppointments() {
             const appointmentsContainer = document.getElementById('appointments-container');
             appointmentsContainer.innerHTML = '<p>No appointments found.</p>';
         }
-    } catch (error) {
-        console.error('Error fetching appointments:', error);
-        // Handle error, show message, or log it as needed
-    }
+
 }
 
 function renderAppointments(appointments) {

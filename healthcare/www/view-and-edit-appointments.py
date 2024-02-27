@@ -4,7 +4,8 @@ from healthcare.healthcare.doctype.patient.patient import get_patients_from_user
 
 no_cache = 1
 
-def get_context(context):
+@frappe.whitelist()
+def get_user_appointments(user,context):
 	patients = []
 	context.no_cache = 1
 	if frappe.session.user=='Guest':
@@ -13,8 +14,6 @@ def get_context(context):
 		patients = get_patients_from_user(frappe.session.user)
 	context.patients = patients
 
-@frappe.whitelist()
-def get_user_appointments(user):
     # Fetch appointments associated with the logged-in user
     appointments = frappe.get_all('Patient Appointment', filters={'patient': user}, fields=['name', 'appointment_date', 'appointment_time', 'practitioner'])
     return appointments
