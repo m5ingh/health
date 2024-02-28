@@ -10,4 +10,11 @@
 {% endfor %}
 </ol>
 
+<h3>List of patients</h3>
+<ol>
+{% for patient in patients %}
+    <li>{{ patient.first_name }} {{ patient.get("last_name", "") }}</li>
+{% endfor %}
+</ol>
+
 {% endblock %}
