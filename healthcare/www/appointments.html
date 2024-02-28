@@ -1,0 +1,13 @@
+{% extends "frappe/templates/web.html" %}
+
+{% block content %}
+{{ include_style('healthcare-web.bundle.css') }}
+
+<h3>List of Users</h3>
+<ol>
+{% for user in users %}
+    <li>{{ user.first_name }} {{ user.get("last_name", "") }}</li>
+{% endfor %}
+</ol>
+
+{% endblock %}
