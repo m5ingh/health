@@ -12,7 +12,7 @@ def get_context(context):
 	else:
 		patients = get_patients_from_user(frappe.session.user)
 	context.patients = patients
-	return patients
+	return context
 
 @frappe.whitelist()
 def get_user_appointments(user):
