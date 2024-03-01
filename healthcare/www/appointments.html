@@ -24,6 +24,14 @@
 {% endfor %}
 </ol>
 
+<h3>List of appointments</h3>
+<ol>
+{% for appointment in appointments %}
+    <li>{{ appointment.full_name }} {{ user.get("appointment_date", "appointment_time", "appointment.practitioner") }}</li>
+{% endfor %}
+</ol>
+
+
 <script>
 	var patient_list = "{{patients}}"
 </script>
