@@ -9,9 +9,14 @@ def get_context(context):
     patients = get_patients_from_user(frappe.session.user)
     context.patients = patients
 
+    for patient in patients:
+        patient_name = patient.full_name
+        # Do something with patient_name if needed
+
+    # Corrected the loop to access each patient's name
     appointments = frappe.get_all(
         "Patient Appointment",
-        filters={'patient': patients.full_name},
+        filters={'patient': ('in', [patient.full_name for patient in patients])},
         fields=['full_name', 'appointment_date', 'appointment_time', 'practitioner']
     )
     context.appointments = appointments
