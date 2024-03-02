@@ -27,7 +27,7 @@
 <h3>List of appointments</h3>
 <ol>
 {% for appointment in appointments %}
-    <li>{{ appointment.id }} {{ appointment.get("appointment_date") }} {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner") }}</li>
+    <li>{{ appointment.get("id") }} {{ appointment.get("appointment_date") }} {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}</li>
 {% endfor %}
 </ol>
 
