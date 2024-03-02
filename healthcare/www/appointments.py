@@ -11,7 +11,7 @@ def get_context(context):
 
     appointments = frappe.get_all(
         "Patient Appointment",
-        filters={'patient': patients},
+        filters={'patient': patients.full_name},
         fields=['full_name', 'appointment_date', 'appointment_time', 'practitioner']
     )
     context.appointments = appointments
