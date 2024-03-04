@@ -3,27 +3,6 @@
 {% block content %}
 {{ include_style('healthcare-web.bundle.css') }}
 
-<h3>List of Users</h3>
-<ol>
-{% for user in users %}
-    <li>{{ user.first_name }} {{ user.get("last_name", "") }}</li>
-{% endfor %}
-</ol>
-
-<h3>List of patients</h3>
-<ol>
-{% for pat in patients %}
-    <li>{{pat.full_name}} (ID: {{pat.patient}})</li>
-{% endfor %}
-</ol>
-
-<h3>List of patients</h3>
-<ol>
-{% for pat in patients %}
-    <option value="{{pat.patient}}">{{pat.full_name}}</option>
-{% endfor %}
-</ol>
-
 <h3>List of appointments</h3>
 <ol>
 {% for appointment in appointments %}
@@ -31,9 +10,5 @@
 {% endfor %}
 </ol>
 
-
-<script>
-	var patient_list = "{{patients}}"
-</script>
 
 {% endblock %}
