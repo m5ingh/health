@@ -18,8 +18,7 @@ def get_context(context):
     )
     context.appointments = appointments
 
-
-def update_appointment_status(appointment_id):
+@frappe.whitelist()def update_appointment_status(appointment_id):
     """
     Update the status of a Patient Appointment.
 
