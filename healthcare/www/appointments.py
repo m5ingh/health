@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from healthcare.healthcare.doctype.patient.patient import get_patients_from_user
 
 no_cache = 1
