@@ -2,13 +2,15 @@
 
 {% block content %}
 {{ include_style('healthcare-web.bundle.css') }}
-
-<h3>List of appointments</h3>
-<ol>
+<div class="portal-full-section">
+<h2>List of appointments</h2>
+<ol class="cards">
 {% for appointment in appointments %}
-    <li>{{ appointment.get("name") }} {{ appointment.get("appointment_date") }} {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}</li>
+    <li>{{ appointment.get("name") }} {{ appointment.get("appointment_date") }} {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
+    <button class="btn-appointment">Cancel</button>
+    </li>
 {% endfor %}
 </ol>
-
+</div>
 
 {% endblock %}
