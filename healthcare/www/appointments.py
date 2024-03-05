@@ -28,7 +28,7 @@ def update_appointment_status(appointment_id):
         })
     appointment.update_status(appointment_id, status)
     if appointment:
-        frappe.msgprint(_("Appointment Cancelled")
+        frappe.msgprint(_("Appointment Cancelled"))
     else:
-        frappe.msgprint(_("Appointment not Cancelled")
+        frappe.msgprint(_("Appointment not Cancelled"))
 
