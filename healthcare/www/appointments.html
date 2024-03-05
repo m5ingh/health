@@ -5,21 +5,14 @@
     <div class="portal-full-section">
         <h2>List of Appointments</h2>
 
-        {% set current_datetime = frappe.utils.now_datetime() %}
-        {% set current_date = frappe.utils.getdate(current_datetime).date() %}
-
         <div class="previous-appointments">
             <h3>Previous Appointments</h3>
             <ol>
-                {% for appointment in appointments %}
-                    {% set appointment_datetime = frappe.utils.get_datetime(appointment.get("appointment_date")) %}
-                    {% set appointment_date = frappe.utils.getdate(appointment_datetime) %}
-                    {% if appointment_date < current_date %}
-                        <li>
-                            {{ appointment.get("name") }} {{ frappe.utils.get_datetime_str(appointment_datetime) }}
-                            {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
-                        </li>
-                    {% endif %}
+                {% for appointment in appointments if appointment.get("appointment_date") < frappe.utils.nowdate() %}
+                    <li>
+                        {{ appointment.get("name") }} {{ appointment.get("appointment_date") }}
+                        {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
+                    </li>
                 {% endfor %}
             </ol>
         </div>
@@ -27,18 +20,12 @@
         <div class="upcoming-appointments">
             <h3>Upcoming Appointments</h3>
             <ol>
-                {% for appointment in appointments %}
-                    {% set appointment_datetime = frappe.utils.get_datetime(appointment.get("appointment_date")) %}
-                    {% set appointment_date = frappe.utils.getdate(appointment_datetime) %}
-                    {% if appointment_date >= current_date %}
-                        <li>
-                            {{ appointment.get("name") }} {{ frappe.utils.get_datetime_str(appointment_datetime) }}
-                            {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
-                            {% if appointment.get("is_upcoming") %}
-                                <button class="btn-appointment" onclick="cancelAppointment('{{ appointment.get("name") }}')">Cancel</button>
-                            {% endif %}
-                        </li>
-                    {% endif %}
+                {% for appointment in appointments if appointment.get("appointment_date") >= frappe.utils.nowdate() %}
+                    <li>
+                        {{ appointment.get("name") }} {{ appointment.get("appointment_date") }}
+                        {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
+                        <button class="btn-appointment" onclick="cancelAppointment('{{ appointment.get("name") }}')">Cancel</button>
+                    </li>
                 {% endfor %}
             </ol>
         </div>
