@@ -8,7 +8,7 @@
         <div class="previous-appointments">
             <h3>Previous Appointments</h3>
             <ol>
-                {% for appointment in appointments if appointment.get("appointment_date") < frappe.utils.nowdate() %}
+                {% for appointment in appointments if getdate(appointment.get("appointment_date")) < frappe.utils.nowdate() %}
                     <li>
                         {{ appointment.get("name") }} {{ appointment.get("appointment_date") }}
                         {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
@@ -20,7 +20,7 @@
         <div class="upcoming-appointments">
             <h3>Upcoming Appointments</h3>
             <ol>
-                {% for appointment in appointments if appointment.get("appointment_date") >= frappe.utils.nowdate() %}
+                {% for appointment in appointments if getdate(appointment.get("appointment_date")) >= frappe.utils.nowdate() %}
                     <li>
                         {{ appointment.get("name") }} {{ appointment.get("appointment_date") }}
                         {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
