@@ -2,28 +2,30 @@
 
 {% block content %}
 {{ include_style('healthcare-web.bundle.css') }}
-<div class="portal-full-section">
-<h2>List of appointments</h2>
-<ol>
-{% for appointment in appointments %}
-    <li>{{ appointment.get("name") }} {{ appointment.get("appointment_date") }} {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
-    <button class="btn-appointment" onclick="cancelAppointment('{{ appointment.get("name") }}')">Cancel</button>
-    </li>
-{% endfor %}
-</ol>
-</div>
+    <div class="portal-full-section">
+        <h2>List of Appointments</h2>
+        <ol>
+            {% for appointment in appointments %}
+                <li>
+                    {{ appointment.get("name") }} {{ appointment.get("appointment_date") }}
+                    {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
+                    <button class="btn-appointment" onclick="cancelAppointment('{{ appointment.get("name") }}')">Cancel</button>
+                </li>
+            {% endfor %}
+        </ol>
+    </div>
 
-<script>
-    function cancelAppointment(appointmentId) {
-        frappe.call({
-            method: 'healthcare.www.appointments.update_appointment_status',
-            args: { appointment_id: appointmentId },
-            callback: function(response) {
-                // Handle the response or perform additional actions if needed
-                console.log(response.message);
-            }
-        });
-    }
-</script>
-
+    <script>
+        function cancelAppointment(appointmentId) {
+            let status = 'Cancelled';
+            frappe.call({
+                method: 'healthcare.healthcare.doctype.patient_appointment.patient_appointment.update_status',
+                args: { appointment_id: appointmentId, status: status},
+                callback: function(response) {
+                    // Handle the response or perform additional actions if needed
+                    console.log(response.message);
+                }
+            });
+        }
+    </script>
 {% endblock %}

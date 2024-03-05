@@ -18,17 +18,5 @@ def get_context(context):
     )
     context.appointments = appointments
 
-@frappe.whitelist()
-def update_appointment_status(appointment_id):
-    status = "Cancelled"
-    appointment = frappe.get_doc({
-        'doctype': 'Patient Appointment',
-        'name': appointment_id,
-        'status': status
-        })
-    appointment.update_status(appointment_id, status)
-    if appointment:
-        frappe.msgprint(_("Appointment Cancelled"))
-    else:
-        frappe.msgprint(_("Appointment not Cancelled"))
+
 
