@@ -13,7 +13,7 @@
             <ol>
                 {% for appointment in appointments %}
                     {% set appointment_datetime = frappe.utils.get_datetime(appointment.get("appointment_date")) %}
-                    {% set appointment_date = frappe.utils.getdate(appointment_datetime).date() %}
+                    {% set appointment_date = frappe.utils.getdate(appointment_datetime) %}
                     {% if appointment_date < current_date %}
                         <li>
                             {{ appointment.get("name") }} {{ frappe.utils.get_datetime_str(appointment_datetime) }}
@@ -29,7 +29,7 @@
             <ol>
                 {% for appointment in appointments %}
                     {% set appointment_datetime = frappe.utils.get_datetime(appointment.get("appointment_date")) %}
-                    {% set appointment_date = frappe.utils.getdate(appointment_datetime).date() %}
+                    {% set appointment_date = frappe.utils.getdate(appointment_datetime) %}
                     {% if appointment_date >= current_date %}
                         <li>
                             {{ appointment.get("name") }} {{ frappe.utils.get_datetime_str(appointment_datetime) }}
