@@ -4,15 +4,39 @@
 {{ include_style('healthcare-web.bundle.css') }}
     <div class="portal-full-section">
         <h2>List of Appointments</h2>
-        <ol>
-            {% for appointment in appointments %}
-                <li>
-                    {{ appointment.get("name") }} {{ appointment.get("appointment_date") }}
-                    {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
-                    <button class="btn-appointment" onclick="cancelAppointment('{{ appointment.get("name") }}')">Cancel</button>
-                </li>
-            {% endfor %}
-        </ol>
+
+        {% set current_date = frappe.utils.nowdate() %}
+
+        <div class="previous-appointments">
+            <h3>Previous Appointments</h3>
+            <ol>
+                {% for appointment in appointments %}
+                    {% if appointment.get("appointment_date") < current_date %}
+                        <li>
+                            {{ appointment.get("name") }} {{ appointment.get("appointment_date") }}
+                            {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </div>
+
+        <div class="upcoming-appointments">
+            <h3>Upcoming Appointments</h3>
+            <ol>
+                {% for appointment in appointments %}
+                    {% if appointment.get("appointment_date") >= current_date %}
+                        <li>
+                            {{ appointment.get("name") }} {{ appointment.get("appointment_date") }}
+                            {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
+                            {% if appointment.get("is_upcoming") %}
+                                <button class="btn-appointment" onclick="cancelAppointment('{{ appointment.get("name") }}')">Cancel</button>
+                            {% endif %}
+                        </li>
+                    {% endif %}
+                {% endfor %}
+            </ol>
+        </div>
     </div>
 
     <script>
