@@ -5,16 +5,18 @@
     <div class="portal-full-section">
         <h2>List of Appointments</h2>
 
-        {% set current_date = frappe.utils.nowdate() %}
+        {% set current_datetime = frappe.utils.now_datetime() %}
+        {% set current_date = frappe.utils.getdate(current_datetime).date() %}
 
         <div class="previous-appointments">
             <h3>Previous Appointments</h3>
             <ol>
                 {% for appointment in appointments %}
-                    {% set appointment_date = frappe.utils.get_datetime(appointment.get("appointment_date")) %}
+                    {% set appointment_datetime = frappe.utils.get_datetime(appointment.get("appointment_date")) %}
+                    {% set appointment_date = frappe.utils.getdate(appointment_datetime).date() %}
                     {% if appointment_date < current_date %}
                         <li>
-                            {{ appointment.get("name") }} {{ appointment_date.strftime("%Y-%m-%d") }}
+                            {{ appointment.get("name") }} {{ frappe.utils.get_datetime_str(appointment_datetime) }}
                             {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
                         </li>
                     {% endif %}
@@ -26,10 +28,11 @@
             <h3>Upcoming Appointments</h3>
             <ol>
                 {% for appointment in appointments %}
-                    {% set appointment_date = frappe.utils.get_datetime(appointment.get("appointment_date")) %}
+                    {% set appointment_datetime = frappe.utils.get_datetime(appointment.get("appointment_date")) %}
+                    {% set appointment_date = frappe.utils.getdate(appointment_datetime).date() %}
                     {% if appointment_date >= current_date %}
                         <li>
-                            {{ appointment.get("name") }} {{ appointment_date.strftime("%Y-%m-%d") }}
+                            {{ appointment.get("name") }} {{ frappe.utils.get_datetime_str(appointment_datetime) }}
                             {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
                             {% if appointment.get("is_upcoming") %}
                                 <button class="btn-appointment" onclick="cancelAppointment('{{ appointment.get("name") }}')">Cancel</button>
