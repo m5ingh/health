@@ -5,19 +5,6 @@
     <div class="portal-full-section">
         <h2>List of Appointments</h2>
 
-        <div class="previous-appointments">
-            <h3>Previous Appointments</h3>
-            <ol>
-                {% for appointment in appointments if frappe.utils.getdate(appointment.get("appointment_date")) < frappe.utils.getdate() %}
-                    <li>
-                        {{ appointment.get("name") }} {{ appointment.get("appointment_date") }}
-                        {{ appointment.get("appointment_time") }} {{ appointment.get("practitioner_name") }}
-                    </li>
-                {% endfor %}
-            </ol>
-        </div>
-
-        <div class="upcoming-appointments">
             <h3>Upcoming Appointments</h3>
             <ol>
                 {% for appointment in appointments if frappe.utils.getdate(appointment.get("appointment_date")) >= frappe.utils.getdate() %}
@@ -28,7 +15,7 @@
                     </li>
                 {% endfor %}
             </ol>
-        </div>
+
     </div>
 
     <script>
