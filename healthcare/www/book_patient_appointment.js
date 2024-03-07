@@ -265,10 +265,10 @@ function book_appointment(){
 					if (success_url == "None") {
 						url = "/";
 					}
-					frappe.utils.setup_timer(5, 0, $(".time"));
+					frappe.utils.setup_timer(60, 0, $(".time"));
 					setTimeout(() => {
 						window.location.href = url;
-					}, 5000);
+					}, 60000);
 			}
 			$(".portal-full-section").removeClass("freeze-div");
 		}
